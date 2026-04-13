@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Phone,
   Menu,
@@ -21,6 +21,44 @@ import {
   Star,
   Award,
 } from "lucide-react";
+
+function useReveal() {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          obs.unobserve(node);
+        }
+      },
+      { threshold: 0.15 }
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, []);
+  return [ref, visible];
+}
+
+function Reveal({ children, className = "", delay = 0, as: Tag = "div" }) {
+  const [ref, visible] = useReveal();
+  return (
+    <Tag
+      ref={ref}
+      className={className}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateY(0)" : "translateY(40px)",
+        transition: `opacity 0.8s ease ${delay}s, transform 0.8s ease ${delay}s`,
+      }}
+    >
+      {children}
+    </Tag>
+  );
+}
 
 /* ──────────────────────────────────────────────
    CSS Keyframe animations injected once
@@ -210,12 +248,22 @@ export default function App() {
           className="relative min-h-screen flex items-center justify-center overflow-hidden"
           style={{ background: "linear-gradient(180deg, #0A1929 0%, #003366 50%, #0A1929 100%)" }}
         >
+          {/* Background image */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundImage: "url('/img1.jpg')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              opacity: 0.25,
+            }}
+          />
           {/* Animated gradient overlay */}
           <div
-            className="absolute inset-0 opacity-30 pointer-events-none"
+            className="absolute inset-0 opacity-60 pointer-events-none"
             style={{
               background:
-                "linear-gradient(135deg, #00D9FF 0%, #003366 25%, #FF6B35 50%, #003366 75%, #00D9FF 100%)",
+                "linear-gradient(135deg, rgba(10,25,41,0.9) 0%, rgba(0,51,102,0.7) 25%, rgba(255,107,53,0.35) 50%, rgba(0,51,102,0.7) 75%, rgba(10,25,41,0.9) 100%)",
               backgroundSize: "400% 400%",
               animation: "gradient-shift 12s ease infinite",
             }}
@@ -294,7 +342,7 @@ export default function App() {
         <section id="categorias" className="py-20 md:py-28 bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Title */}
-            <div className="text-center mb-14">
+            <Reveal className="text-center mb-14">
               <h2 className="font-display text-3xl md:text-5xl font-bold text-[#0A1929] mb-4">
                 Nuestras Categorias
               </h2>
@@ -302,37 +350,90 @@ export default function App() {
                 className="mx-auto w-24 h-1 rounded-full"
                 style={{ background: "#00D9FF" }}
               />
-            </div>
+            </Reveal>
 
             {/* Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {categories.map((cat, i) => {
                 const Icon = cat.icon;
                 return (
-                  <div
-                    key={i}
-                    className="bg-white rounded-2xl shadow-lg p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer group"
-                    style={{ animationDelay: `${i * 80}ms` }}
-                  >
+                  <Reveal key={i} delay={i * 0.08}>
                     <div
-                      className="w-14 h-14 rounded-xl flex items-center justify-center mb-5 transition-colors duration-300"
-                      style={{ background: "#00D9FF15" }}
+                      className="bg-white rounded-2xl shadow-lg p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer group h-full"
                     >
-                      <Icon
-                        size={28}
-                        style={{ color: "#00D9FF" }}
-                        className="group-hover:scale-110 transition-transform duration-300"
-                      />
+                      <div
+                        className="w-14 h-14 rounded-xl flex items-center justify-center mb-5 transition-colors duration-300"
+                        style={{ background: "#00D9FF15" }}
+                      >
+                        <Icon
+                          size={28}
+                          style={{ color: "#00D9FF" }}
+                          className="group-hover:scale-110 transition-transform duration-300"
+                        />
+                      </div>
+                      <h3 className="font-display text-xl font-bold text-[#0A1929] mb-2">
+                        {cat.title}
+                      </h3>
+                      <p className="font-body text-gray-500 text-sm leading-relaxed">
+                        {cat.desc}
+                      </p>
                     </div>
-                    <h3 className="font-display text-xl font-bold text-[#0A1929] mb-2">
-                      {cat.title}
-                    </h3>
-                    <p className="font-body text-gray-500 text-sm leading-relaxed">
-                      {cat.desc}
-                    </p>
-                  </div>
+                  </Reveal>
                 );
               })}
+            </div>
+          </div>
+        </section>
+
+        {/* ───────── SHOWROOM GALLERY ───────── */}
+        <section id="showroom" className="relative py-20 md:py-28 bg-white overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <Reveal className="text-center mb-14">
+              <h2 className="font-display text-3xl md:text-5xl font-bold text-[#0A1929] mb-4">
+                Nuestro Showroom en Miami
+              </h2>
+              <p className="font-body text-gray-500 max-w-2xl mx-auto">
+                Inventario real, local y listo para entrega. Miles de
+                accesorios premium exhibidos en tienda.
+              </p>
+              <div
+                className="mx-auto mt-6 w-24 h-1 rounded-full"
+                style={{ background: "#00D9FF" }}
+              />
+            </Reveal>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                { src: "/img1.jpg", label: "Accesorios Premium", sub: "Fundas, cargadores y mas" },
+                { src: "/img2.jpg", label: "Pared de Fundas", sub: "Catalogo completo por modelo" },
+                { src: "/img3.jpg", label: "Experiencia Apple", sub: "Demos de iPad, MacBook y iPhone" },
+              ].map((item, i) => (
+                <Reveal key={item.src} delay={i * 0.15}>
+                  <div className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+                    <img
+                      src={item.src}
+                      alt={item.label}
+                      loading="lazy"
+                      className="w-full h-72 object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    <div
+                      className="absolute inset-0 opacity-80 transition-opacity duration-500 group-hover:opacity-95"
+                      style={{
+                        background:
+                          "linear-gradient(180deg, transparent 40%, rgba(10,25,41,0.95) 100%)",
+                      }}
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 p-5">
+                      <h3 className="font-display text-white font-bold text-lg">
+                        {item.label}
+                      </h3>
+                      <p className="font-body text-white/80 text-sm">
+                        {item.sub}
+                      </p>
+                    </div>
+                  </div>
+                </Reveal>
+              ))}
             </div>
           </div>
         </section>
@@ -385,8 +486,8 @@ export default function App() {
                 </a>
               </div>
 
-              {/* Right: decorative visual */}
-              <div className="hidden lg:flex items-center justify-center relative">
+              {/* Right: Image + floating stats card */}
+              <Reveal delay={0.2} className="hidden lg:flex items-center justify-center relative">
                 <div
                   className="w-80 h-80 rounded-full opacity-20 blur-2xl absolute"
                   style={{
@@ -394,32 +495,48 @@ export default function App() {
                     animation: "float 7s ease-in-out infinite",
                   }}
                 />
-                <div className="relative bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-10 w-full max-w-md">
-                  <div className="space-y-6">
+                <div className="relative w-full max-w-lg">
+                  <div className="rounded-3xl overflow-hidden shadow-2xl border border-white/10">
+                    <img
+                      src="/img2.jpg"
+                      alt="Inventario mayorista iPro Miami"
+                      loading="lazy"
+                      className="w-full h-[420px] object-cover"
+                    />
+                    <div
+                      className="absolute inset-0 pointer-events-none"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, rgba(0,217,255,0.15) 0%, transparent 45%, rgba(255,107,53,0.2) 100%)",
+                      }}
+                    />
+                  </div>
+
+                  <div
+                    className="absolute -bottom-8 -left-8 bg-[#0A1929]/90 backdrop-blur-md border border-white/15 rounded-2xl p-5 shadow-xl max-w-[260px] space-y-3"
+                    style={{ animation: "float 6s ease-in-out infinite" }}
+                  >
                     {[
-                      { icon: MapPin, text: "Miami, FL - Inventario local" },
-                      { icon: Clock, text: "Env\u00edo mismo d\u00eda antes de 2 PM" },
-                      { icon: Award, text: "Garant\u00eda real en cada producto" },
+                      { icon: MapPin, text: "Miami, FL" },
+                      { icon: Clock, text: "Envio mismo dia" },
+                      { icon: Award, text: "Garantia real" },
                     ].map((item, i) => {
                       const Ic = item.icon;
                       return (
-                        <div
-                          key={i}
-                          className="flex items-center gap-4 bg-white/5 rounded-xl p-4"
-                        >
+                        <div key={i} className="flex items-center gap-3">
                           <div
-                            className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                            className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
                             style={{ background: "#00D9FF20" }}
                           >
-                            <Ic size={20} style={{ color: "#00D9FF" }} />
+                            <Ic size={18} style={{ color: "#00D9FF" }} />
                           </div>
-                          <span className="text-white/80 font-body text-sm">{item.text}</span>
+                          <span className="text-white/90 font-body text-sm">{item.text}</span>
                         </div>
                       );
                     })}
                   </div>
                 </div>
-              </div>
+              </Reveal>
             </div>
           </div>
         </section>
@@ -427,35 +544,38 @@ export default function App() {
         {/* ───────── ABOUT / QUALITY ───────── */}
         <section id="nosotros" className="py-20 md:py-28 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="font-display text-3xl md:text-5xl font-bold text-[#0A1929] leading-tight mb-6">
-              Desde 2015 conectando Miami
-              <br className="hidden md:block" /> con la mejor tecnologia
-            </h2>
-            <p className="font-body text-lg text-gray-500 max-w-2xl mx-auto mb-14 leading-relaxed">
-              Todos nuestros productos pasan por control de calidad iPro.
-              Garantia real, no promesas vacias.
-            </p>
+            <Reveal>
+              <h2 className="font-display text-3xl md:text-5xl font-bold text-[#0A1929] leading-tight mb-6">
+                Desde 2015 conectando Miami
+                <br className="hidden md:block" /> con la mejor tecnologia
+              </h2>
+              <p className="font-body text-lg text-gray-500 max-w-2xl mx-auto mb-14 leading-relaxed">
+                Todos nuestros productos pasan por control de calidad iPro.
+                Garantia real, no promesas vacias.
+              </p>
+            </Reveal>
 
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {stats.map((s, i) => {
                 const Ic = s.icon;
                 return (
-                  <div
-                    key={i}
-                    className="bg-gray-50 rounded-2xl p-6 md:p-8 transition-all duration-300 hover:shadow-lg hover:scale-[1.02]"
-                  >
+                  <Reveal key={i} delay={i * 0.1}>
                     <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4"
-                      style={{ background: "#00D9FF15" }}
+                      className="bg-gray-50 rounded-2xl p-6 md:p-8 transition-all duration-300 hover:shadow-lg hover:scale-[1.02]"
                     >
-                      <Ic size={24} style={{ color: "#00D9FF" }} />
+                      <div
+                        className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4"
+                        style={{ background: "#00D9FF15" }}
+                      >
+                        <Ic size={24} style={{ color: "#00D9FF" }} />
+                      </div>
+                      <p className="font-display text-3xl md:text-4xl font-bold text-[#0A1929] mb-1">
+                        {s.value}
+                      </p>
+                      <p className="font-body text-sm text-gray-500">{s.label}</p>
                     </div>
-                    <p className="font-display text-3xl md:text-4xl font-bold text-[#0A1929] mb-1">
-                      {s.value}
-                    </p>
-                    <p className="font-body text-sm text-gray-500">{s.label}</p>
-                  </div>
+                  </Reveal>
                 );
               })}
             </div>
@@ -471,7 +591,7 @@ export default function App() {
           }}
         >
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
+            <Reveal className="text-center mb-12">
               <h2 className="font-display text-3xl md:text-5xl font-bold text-[#0A1929] mb-4">
                 Contactanos
               </h2>
@@ -479,8 +599,9 @@ export default function App() {
                 className="mx-auto w-24 h-1 rounded-full"
                 style={{ background: "#00D9FF" }}
               />
-            </div>
+            </Reveal>
 
+            <Reveal delay={0.15}>
             <form
               onSubmit={handleSubmit}
               className="bg-white rounded-3xl shadow-xl p-6 md:p-10 space-y-6"
@@ -577,6 +698,7 @@ export default function App() {
                 </button>
               </div>
             </form>
+            </Reveal>
           </div>
         </section>
       </main>
